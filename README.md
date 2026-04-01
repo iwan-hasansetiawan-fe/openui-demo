@@ -47,6 +47,9 @@ npm install
 ```
 
 ### 2. Setup environment variable
+
+Skip this for data mocking, only update if you are expecting real openai api integration
+
 ```bash
 cp .env.local.example .env.local
 # Edit .env.local → isi ANTHROPIC_API_KEY
