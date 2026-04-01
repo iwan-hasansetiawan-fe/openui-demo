@@ -52,7 +52,7 @@ You can skip this step for data mocking demo, only update if you are expecting r
 
 ```bash
 cp .env.local.example .env.local
-# Edit .env.local → isi ANTHROPIC_API_KEY
+# Edit .env.local → isi OPENAI_API_KEY
 ```
 
 ### 3. Generate system prompt (WAJIB)
