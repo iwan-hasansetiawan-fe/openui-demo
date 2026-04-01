@@ -48,7 +48,7 @@ npm install
 
 ### 2. Setup environment variable
 
-Skip this for data mocking, only update if you are expecting real openai api integration
+You can skip this step for data mocking demo, only update if you are expecting real openai api integration
 
 ```bash
 cp .env.local.example .env.local
