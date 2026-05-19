@@ -256,7 +256,7 @@ export function FlowDiagramComponent({ props }: { props: any }) {
     const bounds = getNodesBounds(nodes);
 
     // padding tambahan
-    const padding = 100;
+    const padding = 10;
 
     const imageWidth = bounds.width + padding * 2;
     const imageHeight = bounds.height + padding * 2;
@@ -267,7 +267,7 @@ export function FlowDiagramComponent({ props }: { props: any }) {
       imageHeight,
       0.5,
       2,
-      1,
+      0.1,
     );
 
     const viewportElement = document.querySelector(
@@ -276,7 +276,7 @@ export function FlowDiagramComponent({ props }: { props: any }) {
 
     if (!viewportElement) return;
 
-    const dataUrl = await htmlToImage.toPng(viewportElement, {
+    const dataUrl = await htmlToImage.toJpeg(viewportElement, {
       backgroundColor: "#ffffff",
 
       width: imageWidth,
@@ -294,7 +294,7 @@ export function FlowDiagramComponent({ props }: { props: any }) {
 
     const link = document.createElement("a");
 
-    link.download = "diagram.png";
+    link.download = "diagram.jpeg";
     link.href = dataUrl;
 
     link.click();
