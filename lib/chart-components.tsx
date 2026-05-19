@@ -10,7 +10,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import {
   LineChart,
   BarChart,
@@ -26,9 +26,17 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { ReactFlow, Background, Controls, MiniMap } from "@xyflow/react";
+import {
+  ReactFlow,
+  Background,
+  Controls,
+  MiniMap,
+  useNodesState,
+  useEdgesState,
+} from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "@dagrejs/dagre";
+import * as htmlToImage from "html-to-image";
 
 // ─── Shared color palette ─────────────────────────────────────────────────────
 const COLORS = [
@@ -63,13 +71,25 @@ export function RechartsLineChartRenderer({ props }: { props: any }) {
   return (
     <div className="w-full py-2">
       {props.title && (
-        <p className="font-semibold text-sm mb-3 text-gray-800">{props.title}</p>
+        <p className="font-semibold text-sm mb-3 text-gray-800">
+          {props.title}
+        </p>
       )}
       <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <LineChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
-          <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 12, fill: "#6b7280" }}
+            axisLine={{ stroke: "#e5e7eb" }}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "#6b7280" }}
+            axisLine={{ stroke: "#e5e7eb" }}
+          />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: "12px" }} />
           {(props.series as string[]).map((s: string, i: number) => (
@@ -103,17 +123,34 @@ export function RechartsBarChartRenderer({ props }: { props: any }) {
   return (
     <div className="w-full py-2">
       {props.title && (
-        <p className="font-semibold text-sm mb-3 text-gray-800">{props.title}</p>
+        <p className="font-semibold text-sm mb-3 text-gray-800">
+          {props.title}
+        </p>
       )}
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={data} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+        <BarChart
+          data={data}
+          margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+        >
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-          <XAxis dataKey="label" tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
-          <YAxis tick={{ fontSize: 12, fill: "#6b7280" }} axisLine={{ stroke: "#e5e7eb" }} />
+          <XAxis
+            dataKey="label"
+            tick={{ fontSize: 12, fill: "#6b7280" }}
+            axisLine={{ stroke: "#e5e7eb" }}
+          />
+          <YAxis
+            tick={{ fontSize: 12, fill: "#6b7280" }}
+            axisLine={{ stroke: "#e5e7eb" }}
+          />
           <Tooltip contentStyle={tooltipStyle} />
           <Legend wrapperStyle={{ fontSize: "12px" }} />
           {(props.series as string[]).map((s: string, i: number) => (
-            <Bar key={s} dataKey={s} fill={COLORS[i % COLORS.length]} radius={[4, 4, 0, 0]} />
+            <Bar
+              key={s}
+              dataKey={s}
+              fill={COLORS[i % COLORS.length]}
+              radius={[4, 4, 0, 0]}
+            />
           ))}
         </BarChart>
       </ResponsiveContainer>
@@ -129,7 +166,9 @@ export function RechartsPieChartRenderer({ props }: { props: any }) {
   return (
     <div className="w-full py-2">
       {props.title && (
-        <p className="font-semibold text-sm mb-3 text-gray-800">{props.title}</p>
+        <p className="font-semibold text-sm mb-3 text-gray-800">
+          {props.title}
+        </p>
       )}
       <ResponsiveContainer width="100%" height={280}>
         <PieChart>
@@ -140,7 +179,9 @@ export function RechartsPieChartRenderer({ props }: { props: any }) {
             cx="50%"
             cy="50%"
             outerRadius={100}
-            label={({ label, percent }: any) => `${label} ${(percent * 100).toFixed(0)}%`}
+            label={({ label, percent }: any) =>
+              `${label} ${(percent * 100).toFixed(0)}%`
+            }
             labelLine={true}
           >
             {slices.map((_: any, i: number) => (
@@ -158,7 +199,7 @@ export function RechartsPieChartRenderer({ props }: { props: any }) {
 // ─── Dagre auto-layout helper ─────────────────────────────────────────────────
 function applyDagreLayout(
   nodes: { id: string; data: { label: string }; type?: string }[],
-  edges: { id: string; source: string; target: string }[]
+  edges: { id: string; source: string; target: string }[],
 ) {
   const g = new dagre.graphlib.Graph();
   g.setGraph({ rankdir: "LR", nodesep: 60, ranksep: 140 });
@@ -174,13 +215,32 @@ function applyDagreLayout(
 
 // ─── FlowDiagramRenderer ──────────────────────────────────────────────────────
 export function FlowDiagramRenderer({ props }: { props: any }) {
+  const reactFlowWrapper = useRef<HTMLDivElement>(null);
+  const downloadImage = useCallback(() => {
+    const node = reactFlowWrapper.current;
+
+    if (!node) return;
+
+    htmlToImage
+      .toJpeg(node, {
+        quality: 0.95,
+        backgroundColor: "#ffffff",
+      })
+      .then((dataUrl) => {
+        const link = document.createElement("a");
+
+        link.download = "react-flow.jpeg";
+        link.href = dataUrl;
+        link.click();
+      });
+  }, []);
   // FlowNode dan FlowEdge adalah SubComponentOf — data ada di .props
   const baseNodes = (props.nodes as any[]).map((n: any) => {
     const p = n?.props ?? n;
     return {
-      id:       p.id,
-      data:     { label: p.label },
-      type:     p.type ?? "default",
+      id: p.id,
+      data: { label: p.label },
+      type: p.type ?? "default",
       position: { x: 0, y: 0 },
     };
   });
@@ -188,25 +248,37 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
   const rfEdges = (props.edges as any[]).map((e: any) => {
     const p = e?.props ?? e;
     return {
-      id:           p.id,
-      source:       p.source,
-      target:       p.target,
-      label:        p.label,
-      animated:     true,
-      style:        { stroke: "#6366f1", strokeWidth: 2 },
-      labelStyle:   { fontSize: 11, fill: "#6b7280" },
+      id: p.id,
+      source: p.source,
+      target: p.target,
+      label: p.label,
+      animated: false,
+      style: { stroke: "#6366f1", strokeWidth: 2 },
+      labelStyle: { fontSize: 11, fill: "#6b7280" },
       labelBgStyle: { fill: "#f9fafb", fillOpacity: 0.8 },
     };
   });
 
   const layoutedNodes = applyDagreLayout(baseNodes, rfEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
+
+  const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
 
   return (
     <div className="w-full py-2">
+      <button
+        onClick={downloadImage}
+        className="mb-3 px-4 py-2 bg-black text-white rounded"
+      >
+        Download JPEG
+      </button>
       {props.title && (
-        <p className="font-semibold text-sm mb-3 text-gray-800">{props.title}</p>
+        <p className="font-semibold text-sm mb-3 text-gray-800">
+          {props.title}
+        </p>
       )}
       <div
+        ref={reactFlowWrapper}
         style={{
           height: 380,
           border: "1px solid #e5e7eb",
@@ -215,21 +287,18 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
         }}
       >
         <ReactFlow
-          nodes={layoutedNodes}
-          edges={rfEdges}
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           zoomOnScroll={false}
-          nodesDraggable={true}
+          nodesDraggable
           proOptions={{ hideAttribution: true }}
         >
           <Background color="#f0f0f0" gap={20} />
           <Controls showInteractive={false} />
-          <MiniMap
-            nodeColor="#6366f1"
-            maskColor="rgb(240, 240, 255, 0.6)"
-            style={{ borderRadius: 6 }}
-          />
         </ReactFlow>
       </div>
     </div>
