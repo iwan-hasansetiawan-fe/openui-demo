@@ -33,6 +33,10 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
+  getNodesBounds,
+  getViewportForBounds,
+  ReactFlowProvider,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import dagre from "@dagrejs/dagre";
@@ -213,27 +217,9 @@ function applyDagreLayout(
   }));
 }
 
-// ─── FlowDiagramRenderer ──────────────────────────────────────────────────────
-export function FlowDiagramRenderer({ props }: { props: any }) {
+export function FlowDiagramComponent({ props }: { props: any }) {
+  const { getNodes } = useReactFlow();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
-  const downloadImage = useCallback(() => {
-    const node = reactFlowWrapper.current;
-
-    if (!node) return;
-
-    htmlToImage
-      .toJpeg(node, {
-        quality: 0.95,
-        backgroundColor: "#ffffff",
-      })
-      .then((dataUrl) => {
-        const link = document.createElement("a");
-
-        link.download = "react-flow.jpeg";
-        link.href = dataUrl;
-        link.click();
-      });
-  }, []);
   // FlowNode dan FlowEdge adalah SubComponentOf — data ada di .props
   const baseNodes = (props.nodes as any[]).map((n: any) => {
     const p = n?.props ?? n;
@@ -264,6 +250,56 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
 
   const [edges, setEdges, onEdgesChange] = useEdgesState(rfEdges);
 
+  const downloadImage = async () => {
+    const nodes = getNodes();
+
+    const bounds = getNodesBounds(nodes);
+
+    // padding tambahan
+    const padding = 100;
+
+    const imageWidth = bounds.width + padding * 2;
+    const imageHeight = bounds.height + padding * 2;
+
+    const viewport = getViewportForBounds(
+      bounds,
+      imageWidth,
+      imageHeight,
+      0.5,
+      2,
+      1,
+    );
+
+    const viewportElement = document.querySelector(
+      ".react-flow__viewport",
+    ) as HTMLElement;
+
+    if (!viewportElement) return;
+
+    const dataUrl = await htmlToImage.toPng(viewportElement, {
+      backgroundColor: "#ffffff",
+
+      width: imageWidth,
+      height: imageHeight,
+      style: {
+        width: `${imageWidth}px`,
+        height: `${imageHeight}px`,
+
+        transform: `
+          translate(${viewport.x}px, ${viewport.y}px)
+          scale(${viewport.zoom})
+        `,
+      },
+    });
+
+    const link = document.createElement("a");
+
+    link.download = "diagram.png";
+    link.href = dataUrl;
+
+    link.click();
+  };
+
   return (
     <div className="w-full py-2">
       <button
@@ -278,7 +314,6 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
         </p>
       )}
       <div
-        ref={reactFlowWrapper}
         style={{
           height: 380,
           border: "1px solid #e5e7eb",
@@ -287,6 +322,7 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
         }}
       >
         <ReactFlow
+          ref={reactFlowWrapper}
           nodes={nodes}
           edges={edges}
           onNodesChange={onNodesChange}
@@ -302,5 +338,14 @@ export function FlowDiagramRenderer({ props }: { props: any }) {
         </ReactFlow>
       </div>
     </div>
+  );
+}
+
+// ─── FlowDiagramRenderer ──────────────────────────────────────────────────────
+export function FlowDiagramRenderer({ props }: { props: any }) {
+  return (
+    <ReactFlowProvider>
+      <FlowDiagramComponent props={props} />
+    </ReactFlowProvider>
   );
 }
